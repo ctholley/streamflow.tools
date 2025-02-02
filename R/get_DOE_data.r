@@ -1,12 +1,21 @@
-#====================================
-# function to get ecology flow data
-#==================================
+#' get_DOE_data
+#'
+#' Downloads data from the Washington State Department of Ecology's Freshwater DataStream
+#'
+#' @param begin_date .
+#' @param end_date .
+#' @param flow_site .
+#' @param flow_params .
+#' @param daily_or_instantaneous .
+#'
+#' @returns .
+#' @export
 get_DOE_data<-function(begin_date,end_date,flow_site,flow_params,daily_or_instantaneous){
   # Calculate the water years for the given date range
   begin_year = ifelse(month(begin_date) < 10, year(begin_date)-1,year(begin_date)) #by water year
   end_year = year(end_date)
   years<-c(begin_year:end_year)
-  
+
   # Lookup table for flow parameters
   flow_params_lookup<-tibble(flow_params=c("discharge","stage_height"), #could add temp?
                              param_codes=c("DSG","STG"))%>%
@@ -14,7 +23,7 @@ get_DOE_data<-function(begin_date,end_date,flow_site,flow_params,daily_or_instan
     dplyr::select(param_codes)%>%
     as.vector()%>%
     unlist()
-  
+
   # Lookup table for daily/instantaneous data
   daily_inst_lookup<-tibble(daily_or_instantaneous=c("daily","instantaneous"),
                             param_codes=c("DV","FM"))%>%
@@ -22,16 +31,16 @@ get_DOE_data<-function(begin_date,end_date,flow_site,flow_params,daily_or_instan
     dplyr::select(param_codes)%>%
     as.vector()%>%
     unlist()
-  
+
   # Lookup table for column names
   names_lookup<-c("DATE" = "date","TIME" = "time", "Discharge(cfs)" ="flow_cfs","Stage(ft.)" ="stage_height", "STAGE(ft.)" ="stage_height", `FLOW(cfs)` = "flow_cfs","QUALITY" = "quality")
-  
+
   # Initialize flow data
   flow_dat<-NULL
-  
+
   # Prep for URL format change depending on water year
   current_water_year <- ifelse(month(Sys.Date()) >= 10, year(Sys.Date()) + 1, year(Sys.Date()))
-  
+
   # Loop through the years and retrieve data
   for(i in years){
     if (i == current_water_year) {
@@ -40,11 +49,11 @@ get_DOE_data<-function(begin_date,end_date,flow_site,flow_params,daily_or_instan
     } else {
       # Historical data table - past water years
       url <- paste0("https://apps.ecology.wa.gov/ContinuousFlowAndWQ/StationData/Prod/", flow_site, "/", flow_site, "_", i, "_", flow_params_lookup, "_", daily_inst_lookup, ".TXT")
-    } 
+    }
     # Attempt to retrieve data from the constructed URL
     try(
       if(i==min(years)){ # For the first year in the range, retrieve the column names and overwrite the null flow_dat data frame
-        
+
         # Extract the column names from the data file
         names<-grep("DATE",read_lines(url,skip_empty_rows = T),invert=F,value=T)%>%
           str_split("  ")%>%
@@ -60,7 +69,7 @@ get_DOE_data<-function(begin_date,end_date,flow_site,flow_params,daily_or_instan
           mutate(date = mdy(date))%>%
           mutate(across(any_of(c("stage_height","flow_cfs","quality")),~as.numeric(.)))
       }else{ # For subsequent years, retrieve the data and append it to the flow_dat data frame
-        
+
         # Extract the column names from the data file
         names<-grep("DATE",read_lines(url,skip_empty_rows = T),invert=F,value=T)%>%
           str_split("  ")%>%
@@ -88,6 +97,6 @@ get_DOE_data<-function(begin_date,end_date,flow_site,flow_params,daily_or_instan
   # Filter the data within the specified date range
   flow_dat<-flow_dat%>%
     filter(date>=ymd(begin_date) & date <= ymd(end_date))
-  
+
   return(flow_dat)
 }

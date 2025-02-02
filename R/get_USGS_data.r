@@ -1,22 +1,31 @@
-#===============================
-# function to get USGS flow data
-#===============================
-get_USGS_data<-function(flow_site,flow_params,daily_or_instantaneous,begin_date,end_date){
+#' get_usgs_data
+#'
+#' Downloads Streamflow Data from the USGS National Water Information System (NWIS)
+#'
+#' @param flow_site .
+#' @param flow_params .
+#' @param daily_or_instantaneous .
+#' @param begin_date .
+#' @param end_date .
+#'
+#' @returns .
+#' @export
+get_usgs_data<-function(flow_site,flow_params,daily_or_instantaneous,begin_date,end_date){
   flow_params_lookup<-tibble(flow_params=c("discharge","stage_height"),
                              param_codes=c("00060","00065"))%>%
     right_join(tibble("flow_params"=flow_params))%>%
     dplyr::select(param_codes)%>%
     as.vector()%>%
     unlist()
-  
+
   names_lookup_daily<-c("Date" = "date","Flow" ="flow_cfs","GH" ="stage_height")
-  names_lookup_inst<-c("Date" ="date","Flow_Inst"="flow_cfs","GH_Inst" ="stage_height" )                    
-  
+  names_lookup_inst<-c("Date" ="date","Flow_Inst"="flow_cfs","GH_Inst" ="stage_height" )
+
   if(daily_or_instantaneous=="daily"){
     tdat<- readNWISdv(siteNumber=flow_site,
-                      parameterCd = flow_params_lookup, 
+                      parameterCd = flow_params_lookup,
                       startDate = begin_date,
-                      endDate = end_date, 
+                      endDate = end_date,
                       statCd = "00003")%>%
       renameNWISColumns()%>%
       as_tibble()%>%

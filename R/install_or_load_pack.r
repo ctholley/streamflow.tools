@@ -1,6 +1,11 @@
-#==========================================
-#function to install or load packages
-#==========================================
+#' install_or_load_pack
+#'
+#' Install and Load Packages
+#'
+#' @param pack .
+#'
+#' @returns .
+#' @export
 install_or_load_pack <- function(pack){
   create.pkg <- pack[!(pack %in% installed.packages()[, "Package"])]
   if (length(create.pkg))
